@@ -145,8 +145,8 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
-	/* std::vector<SearchAction> solution;
-	std::map<SearchState, double> open;
+	std::vector<SearchAction> solution;
+	std::map<double, SearchState> open;
 	std::set<SearchState> closed;
 	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map;
 	double cost = 0;	// g(n) part of the f(n) to calculate cost, ie. trips from source
@@ -156,7 +156,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 
 	auto state_ptr = std::make_shared<SearchState>(init_state);
 	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
-	open.emplace(init_state, cost);
+	open.emplace(cost, init_state);
 	
 	while(!open.empty()){
 		if(getCurrentRSS() >= mem_limit_ - memory_threshold){
@@ -165,9 +165,8 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		}
 
 		// TODO add a way to return key of min value from open!!!
-		SearchState working_state;
-		open.erase(working_state);
-
+		SearchState working_state(open.begin()->second);
+		open.erase(open.begin());
 		auto search = closed.find(working_state);
 		auto actions = working_state.actions();
 		
@@ -184,7 +183,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 				auto f_n = cost + h_n;
 
 				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
-				open.emplace(new_state, f_n);
+				open.emplace(f_n, new_state);
 
 				if(new_state.isFinal()){
 					auto map_itr = action_map.find(new_state);
@@ -201,6 +200,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			state_ptr = nullptr;
 		}	
 	}
-	action_map.clear();	 */
+	action_map.clear();
 	return {};
 }
