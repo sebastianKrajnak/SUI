@@ -8,6 +8,24 @@
 
 int memory_threshold = 100 * (1024^2);
 
+std::vector<SearchAction> FindSolution(
+	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction>>::iterator &map_itr,
+	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > &action_map,
+	std::shared_ptr<SearchState> &prev_ptr) {
+
+	std::vector<SearchAction> solution;
+
+	while(std::get<0>(map_itr->second) != nullptr){ 
+		solution.push_back(std::get<1>(map_itr->second));
+		prev_ptr = std::get<0>(map_itr->second);
+
+		map_itr = action_map.find(*prev_ptr.get()); 						
+	}
+
+	std::reverse(solution.begin(), solution.end());
+	return solution;
+}
+
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 	std::vector<SearchAction> solution;
 	std::deque<SearchState> open;
@@ -48,14 +66,8 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 					auto map_itr = action_map.find(new_state);
 					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
 
-					while(std::get<0>(map_itr->second) != nullptr){ //only works once. why?
-						solution.push_back(std::get<1>(map_itr->second));
-						prev_ptr = std::get<0>(map_itr->second);
+					solution = FindSolution(map_itr, action_map, prev_ptr);
 
-						map_itr = action_map.find(*prev_ptr.get()); //only god knows if this works... (probably doesnt)						
-					}
-
-					std::reverse(solution.begin(), solution.end());
 					action_map.clear();				
 					return solution;
 				}
@@ -68,6 +80,54 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 }
 
 std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
+	std::vector<SearchAction> solution;
+	std::deque<SearchState> open;
+	std::set<SearchState> closed;
+	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map; 
+	//(current search state, (pointer parent state, action from parent to current))
+
+	if (init_state.isFinal())
+		return {};
+
+	auto state_ptr = std::make_shared<SearchState>(init_state);
+	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
+	open.push_back(init_state);
+
+	while(!open.empty()){
+		if(getCurrentRSS() >= mem_limit_ - memory_threshold){
+			std::cout << "Out of memory." << std::endl;
+			break;
+		}
+		SearchState working_state(open.back());
+		open.pop_back();
+		auto search = closed.find(working_state);
+		auto actions = working_state.actions();
+
+		if (search == closed.end()){	//std::maps end() fn goes through the entire map and returns past-the-end if key is not in map
+			closed.insert(working_state);
+			if (state_ptr == nullptr)
+				state_ptr = std::make_shared<SearchState>(working_state);
+
+			for( auto &action : actions){
+				SearchState new_state(working_state);
+				new_state = action.execute(new_state);
+				
+				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
+				open.push_back(new_state);
+
+				if(new_state.isFinal()){
+					auto map_itr = action_map.find(new_state);
+					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
+
+					solution = FindSolution(map_itr, action_map, prev_ptr);
+					action_map.clear();				
+					return solution;
+				}
+			}
+			state_ptr = nullptr;
+		}	
+	}
+	action_map.clear();	
 	return {};
 }
 
