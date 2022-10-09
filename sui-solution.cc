@@ -86,6 +86,8 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map; 
 	//(current search state, (pointer parent state, action from parent to current))
 
+	int depth = 0;
+	
 	if (init_state.isFinal())
 		return {};
 
@@ -98,6 +100,11 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 			std::cout << "Out of memory." << std::endl;
 			break;
 		}
+		if(depth > depth_limit_){
+			std::cout << "Reached maxed allowed depth" << std::endl;
+			break;
+		}
+
 		SearchState working_state(open.back());
 		open.pop_back();
 		auto search = closed.find(working_state);
@@ -124,6 +131,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 					return solution;
 				}
 			}
+			depth++;
 			state_ptr = nullptr;
 		}	
 	}
