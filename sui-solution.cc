@@ -26,7 +26,6 @@ std::vector<SearchAction> FindSolution(
 	return solution;
 }
 
-
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 	std::vector<SearchAction> solution;
 	std::deque<SearchState> open;
@@ -141,7 +140,64 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 }
 
 double StudentHeuristic::distanceLowerBound(const GameState &state) const {
-    return 0;
+	// Heuristics src: https://www.human-competitive.org/sites/default/files/elyasaf-hauptmann-sipper-paper.pdf
+	/* 
+	SumOfBottomCards. Take the highest possible sum of
+	cards in the bottom of cascades (e.g. 100), and subtract the sum of values
+	of cards actually located there.
+	 */
+
+	/* double actual_sum = 0;
+	for (const auto &cascade : state.stacks) {
+        auto top_card = cascade.topCard();
+        if (top_card.has_value())
+            actual_sum += top_card->value;
+    }
+	 return 100 - actual_sum; */
+
+	/*  
+	DifferenceFromTop. The average value of the top cards
+	in cascades, minus the average value of the top cards in
+	home piles.
+	*/
+
+	double cascade_sum = 0;
+	double home_sum = 0;
+
+	for (const auto &cascade : state.stacks) {
+        auto top_card = cascade.topCard();
+        if (top_card.has_value())
+            cascade_sum += top_card->value;
+    }
+
+	for (const auto &home : state.homes) {
+        auto top_card = home.topCard();
+        if (top_card.has_value())
+            home_sum += top_card->value;
+    }
+
+	 return cascade_sum/8 - home_sum/4;
+
+	/*
+	 Heineman’s Staged Deepening Heusirtic (HSDH). This is
+	the heuristic used by the HSD algorithm: For each home pile, locate within the cascade piles the next
+	card that should be placed there, and count the cards found on top of it. The returned value is the sum of 
+	this count for all foundations. This number is multiplied by 2 if there are no free FreeCells or empty 
+	foundation piles (reflecting the fact that freeing the next card is harder in this case).
+	*/
+	
+	/* /for (const auto& home : state.homes) {
+		auto home_card = home.topCard();
+		if(home_card.has_value())
+			auto home_card_value = home_card->value;
+		
+		std::cout << "Home card is: " << std::endl;
+		for (const auto& cascade : state.stacks) {
+			
+			 // I don't fuken kno how to get a list of all of card so I can compare them
+		} 
+	}
+	return 0; */
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
@@ -157,14 +213,13 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	auto state_ptr = std::make_shared<SearchState>(init_state);
 	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
 	open.emplace(cost, init_state);
-	
+
 	while(!open.empty()){
 		if(getCurrentRSS() >= mem_limit_ - memory_threshold){
 			std::cout << "Out of memory." << std::endl;
 			break;
 		}
 
-		// TODO add a way to return key of min value from open!!!
 		SearchState working_state(open.begin()->second);
 		open.erase(open.begin());
 		auto search = closed.find(working_state);
@@ -189,7 +244,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 					auto map_itr = action_map.find(new_state);
 					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
 
-					std::cout << "Found final state !" << std::endl;
+					//std::cout << "Found final state !" << std::endl;
 
 					solution = FindSolution(map_itr, action_map, prev_ptr);
 					action_map.clear();				
