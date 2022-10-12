@@ -177,27 +177,6 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
     }
 
 	 return cascade_sum/8 - home_sum/4;
-
-	/*
-	 Heineman’s Staged Deepening Heusirtic (HSDH). This is
-	the heuristic used by the HSD algorithm: For each home pile, locate within the cascade piles the next
-	card that should be placed there, and count the cards found on top of it. The returned value is the sum of 
-	this count for all foundations. This number is multiplied by 2 if there are no free FreeCells or empty 
-	foundation piles (reflecting the fact that freeing the next card is harder in this case).
-	*/
-	
-	/* /for (const auto& home : state.homes) {
-		auto home_card = home.topCard();
-		if(home_card.has_value())
-			auto home_card_value = home_card->value;
-		
-		std::cout << "Home card is: " << std::endl;
-		for (const auto& cascade : state.stacks) {
-			
-			 // I don't fuken kno how to get a list of all of card so I can compare them
-		} 
-	}
-	return 0; */
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
