@@ -1,10 +1,13 @@
 #include "search-strategies.h"
 #include "memusage.h"
 #include <deque>
+#include <queue>
 #include <map>
 #include <set>
 #include <tuple>
 #include <algorithm>
+
+typedef std::pair<double, SearchState> Pair;
 
 int memory_threshold = 100 * (1024^2);
 
@@ -50,7 +53,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		auto search = closed.find(working_state);
 		auto actions = working_state.actions();
 
-		if (search == closed.end()){	//std::maps end() fn goes through the entire map and returns past-the-end if key is not in map
+		if (search == closed.end()){	//std::sets end() fn goes through the entire set and returns past-the-end if key is not in set
 			closed.insert(working_state);
 			if (state_ptr == nullptr)
 				state_ptr = std::make_shared<SearchState>(working_state);
@@ -201,7 +204,8 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
-	std::vector<SearchAction> solution;
+	//this works but not necessarily a_star
+	/* std::vector<SearchAction> solution;
 	std::map<double, SearchState> open;
 	std::set<SearchState> closed;
 	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map;
@@ -255,6 +259,81 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 			state_ptr = nullptr;
 		}	
 	}
+	action_map.clear();
+	return {}; */
+
+	std::vector<SearchAction> solution;
+	std::priority_queue<std::pair<double, SearchState>> open;
+	std::map<SearchState, double> g_scores;
+	std::map<SearchState, double> f_scores;
+	std::set<SearchState> closed;
+	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map;
+	double cost = 0;	// g(n) part of the f(n) to calculate cost, ie. number of trips from source
+
+	if (init_state.isFinal())
+		return {};
+
+	auto state_ptr = std::make_shared<SearchState>(init_state);
+	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
+	open.emplace(std::make_pair(cost, init_state));
+	g_scores.emplace(init_state, cost);
+	f_scores.emplace(init_state, compute_heuristic(init_state, *heuristic_));
+
+	while(!open.empty()){
+		if(getCurrentRSS() >= mem_limit_ - memory_threshold){
+			std::cout << "Out of memory." << std::endl;
+			break;
+		}
+
+		auto& top = open.top();
+		auto& a = top.second;
+
+		SearchState working_state(a);
+		open.pop();
+		
+		auto actions = working_state.actions();
+
+		for( auto &action : actions){
+				SearchState new_state(working_state);
+				new_state = action.execute(new_state);
+				auto search_closed = closed.find(new_state);
+				if(search_closed != closed.end())
+					break;
+				
+				if(new_state.isFinal()){
+					auto map_itr = action_map.find(new_state);
+					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
+
+					solution = FindSolution(map_itr, action_map, prev_ptr);
+
+					action_map.clear();				
+					return solution;
+				}
+
+				auto current_g = g_scores.find(working_state);
+				auto next_g = g_scores.find(new_state);
+				auto tentative_score = current_g->second + 1;
+
+				if(tentative_score < next_g->second || next_g == g_scores.end()){
+					auto h_n = compute_heuristic(new_state, *heuristic_);
+					auto f_n = tentative_score + h_n;
+
+					g_scores.emplace(new_state, tentative_score);
+					f_scores.emplace(new_state, f_n)
+					
+
+				}
+				
+				
+
+				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
+				open.emplace(std::make_pair(f_n, new_state));
+
+				
+			}
+
+	}
+
 	action_map.clear();
 	return {};
 }
