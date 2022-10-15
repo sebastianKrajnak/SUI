@@ -267,8 +267,10 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	std::map<SearchState, double> g_scores;
 	std::map<SearchState, double> f_scores;
 	std::set<SearchState> closed;
+	std::set<SearchState> open_checklist;
 	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map;
 	double cost = 0;	// g(n) part of the f(n) to calculate cost, ie. number of trips from source
+	bool tentative_is_better = false;
 
 	if (init_state.isFinal())
 		return {};
@@ -276,6 +278,7 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	auto state_ptr = std::make_shared<SearchState>(init_state);
 	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
 	open.emplace(std::make_pair(cost, init_state));
+	open_checklist.insert(init_state);
 	g_scores.emplace(init_state, cost);
 	f_scores.emplace(init_state, compute_heuristic(init_state, *heuristic_));
 
@@ -290,50 +293,62 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 
 		SearchState working_state(a);
 		open.pop();
+		open_checklist.erase(working_state);
+		closed.insert(working_state);
+
+		if(working_state.isFinal()){
+			auto map_itr = action_map.find(working_state);
+			auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
+
+			solution = FindSolution(map_itr, action_map, prev_ptr);
+
+			action_map.clear();				
+			return solution;
+		}
 		
 		auto actions = working_state.actions();
 
 		for( auto &action : actions){
-				SearchState new_state(working_state);
-				new_state = action.execute(new_state);
-				auto search_closed = closed.find(new_state);
-				if(search_closed != closed.end())
-					break;
-				
-				if(new_state.isFinal()){
-					auto map_itr = action_map.find(new_state);
-					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
+			SearchState new_state(working_state);
+			new_state = action.execute(new_state);
 
-					solution = FindSolution(map_itr, action_map, prev_ptr);
+			auto search_closed = closed.find(new_state);
+			auto search_open = open_checklist.find(new_state);
 
-					action_map.clear();				
-					return solution;
-				}
+			if(search_closed != closed.end())
+				break;
+			
+			auto current_g = g_scores.find(working_state);
+			auto new_g = g_scores.find(new_state);
+			auto tentative_score = current_g->second + 1;
+			auto h_n = compute_heuristic(new_state, *heuristic_);
+			auto f_n = new_g->second + h_n;
 
-				auto current_g = g_scores.find(working_state);
-				auto next_g = g_scores.find(new_state);
-				auto tentative_score = current_g->second + 1;
-
-				if(tentative_score < next_g->second || next_g == g_scores.end()){
-					auto h_n = compute_heuristic(new_state, *heuristic_);
-					auto f_n = tentative_score + h_n;
-
-					g_scores.emplace(new_state, tentative_score);
-					f_scores.emplace(new_state, f_n)
-					
-
-				}
-				
-				
-
-				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
+			if (search_open == closed.end())
+			{
 				open.emplace(std::make_pair(f_n, new_state));
+				open_checklist.insert(new_state);
+				tentative_is_better = true;
 
-				
+				if (state_ptr == nullptr)
+					state_ptr = std::make_shared<SearchState>(working_state);
+			}
+			else if(tentative_score < new_g->second){
+				tentative_is_better = true;
+			}
+			else{
+				tentative_is_better = false;
 			}
 
+			if(tentative_is_better){
+				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
+				g_scores.emplace(new_state, tentative_score);
+				f_scores.emplace(new_state, f_n);
+			}
+		}
+		cost++;
+		state_ptr = nullptr;
 	}
-
 	action_map.clear();
 	return {};
 }
