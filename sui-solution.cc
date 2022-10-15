@@ -235,16 +235,6 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 		auto& top = open.top();
 
 		SearchState working_state(top.second);
-
-		if(working_state.isFinal()){
-			auto map_itr = action_map.find(working_state);
-			auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
-
-			solution = FindSolution(map_itr, action_map, prev_ptr);
-
-			action_map.clear();				
-			return solution;
-		}
 		
 		open.pop();
 		open_checklist.erase(working_state);
@@ -276,6 +266,16 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
 				g_scores.emplace(new_state, tentative_score);
 				f_scores.emplace(new_state, f_n);
+
+				if(new_state.isFinal()){
+					auto map_itr = action_map.find(new_state);
+					auto prev_ptr = std::shared_ptr<SearchState>(nullptr);
+
+					solution = FindSolution(map_itr, action_map, prev_ptr);
+
+					action_map.clear();				
+					return solution;
+				}
 				
 				if(search_open == open_checklist.end()){
 					open.push(std::make_pair(f_n, new_state));
