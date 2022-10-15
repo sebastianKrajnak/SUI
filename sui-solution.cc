@@ -91,7 +91,7 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 
 std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state) {
 	std::vector<SearchAction> solution;
-	std::deque<SearchState> open;
+	std::deque<std::tuple<SearchState, uint>> open;
 	std::set<SearchState> closed;
 	std::map<SearchState, std::tuple<std::shared_ptr<SearchState>, SearchAction> > action_map; 
 	//(current search state, (pointer parent state, action from parent to current))
@@ -103,22 +103,24 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 
 	auto state_ptr = std::make_shared<SearchState>(init_state);
 	action_map.emplace(init_state, std::make_tuple(nullptr, init_state.actions()[0]));
-	open.push_back(init_state);
+	open.push_back(std::make_tuple(init_state, 0));
 
 	while(!open.empty()){
 		if(getCurrentRSS() >= mem_limit_ - memory_threshold){
 			std::cout << "Out of memory." << std::endl;
 			break;
 		}
-		if(depth > depth_limit_){
-			std::cout << "Reached maxed allowed depth" << std::endl;
-			break;
-		}
-
-		SearchState working_state(open.back());
+		
+		std::tuple<SearchState, uint> current = open.back();
+		SearchState working_state(std::get<0>(current));
+		depth = std::get<1>(current);
 		open.pop_back();
 		auto search = closed.find(working_state);
 		auto actions = working_state.actions();
+
+		if(depth > depth_limit_){
+			continue;
+		}
 
 		if (search == closed.end()){	//std::sets end() fn goes through the entire set and returns past-the-end if key is not in set
 			closed.insert(working_state);
@@ -130,7 +132,7 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 				new_state = action.execute(new_state);
 				
 				action_map.emplace(new_state, std::make_tuple(state_ptr, action));
-				open.push_back(new_state);
+				open.push_back(std::make_tuple(new_state, depth + 1));
 
 				if(new_state.isFinal()){
 					auto map_itr = action_map.find(new_state);
@@ -141,7 +143,6 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 					return solution;
 				}
 			}
-			depth++;
 			state_ptr = nullptr;
 		}	
 	}
