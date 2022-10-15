@@ -168,6 +168,7 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
     }
 
 	 return cascade_sum/8 - home_sum/4;
+
  
 	/*
 	 Heineman’s Staged Deepening Heusirtic (HSDH). This is
@@ -201,6 +202,7 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 	else{
 		return total_sum;
 	} */
+
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
