@@ -1,0 +1,4 @@
+*.o
+*.d
+fc-sui
+test-bin
