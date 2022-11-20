@@ -2,3 +2,4 @@
 *.d
 fc-sui
 test-bin
+.vscode/settings.json
