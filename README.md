@@ -11,3 +11,8 @@ gde body: 3.63/7
 Working out basic machine learning principles in a provided Python Jupyter notebook. FFS would it kill Burget to fucking write the assignments normally so I wouldn't have to kill like 50 minutes on each small task just trying to figure out wtf he even wants reeeeee
 
 gde body: 6.75/7
+
+## Project 3 - simple neural networks
+Creating simple neural networks and necessary functions in a provided Python Jupyter notebook. 
+
+gde body: 4.5/6
